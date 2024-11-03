@@ -37,6 +37,8 @@
 #include "persistence.hpp"
 #include "primitives.hpp"
 
+#include <omp.h>
+
 namespace packaide {
 
 const double pi = std::acos(-1);
@@ -111,7 +113,7 @@ std::optional<std::vector<std::vector<packaide::Placement>>> pack_polygons_order
   for (; current_polygon_index != order.end(); ++current_polygon_index) {
 
     size_t polygon_id = *current_polygon_index;
-    bool polygon_placed = false;
+    volatile bool polygon_placed = false;
     const auto& current_polygon = polygons.at(*current_polygon_index);
 
     // Try every sheet until a feasible placement is found
@@ -142,10 +144,12 @@ std::optional<std::vector<std::vector<packaide::Placement>>> pack_polygons_order
       // and select the ones that gives the best heuristic score
       packaide::Transform best_transform;
       Point_2 best_point;
-      int best_i;
-      double eval_value = INFINITY;
+      volatile int best_i;
+      volatile double eval_value = INFINITY;
 
-      for (int i = 0; i < rotations; i++){
+      #pragma omp parallel for
+      for (int i = 0; i < rotations; i++)
+      {
         double angle = i * 2 * pi/rotations;
 
         // Compute the inner fit polygon
@@ -157,6 +161,8 @@ std::optional<std::vector<std::vector<packaide::Placement>>> pack_polygons_order
         // Generate the candidate placement locations from the no fit polygons
         packaide::CandidatePoints candidates{};
         candidates.set_boundary(ifp);
+        
+        #pragma omp critical // nfp uses a shared cache, setting this region as critical is easier than making the cache thread-safe
         for (const auto& shape: sheet_parts[sheet_id]) {
           auto nfp_shape = nfp(shape.base, shape.transform, shape.rotation, current_polygon, angle, state);
           candidates.add_nfp(nfp_shape);
@@ -169,11 +175,18 @@ std::optional<std::vector<std::vector<packaide::Placement>>> pack_polygons_order
             Transformation translate(CGAL::TRANSLATION, Vector_2(point.x(), point.y()));
             auto test_position = transform_polygon_with_holes(translate, rotated_polygon);
             double test_eval = sheet_heuristics[sheet_id].eval_new_part(test_position) + 0.01 * (to_double(point.x()) + to_double(point.y()));
-            if(test_eval < eval_value) {
-              best_transform = packaide::Transform(point, i * 360/rotations);
-              best_point = point;
-              best_i = i;
-              eval_value = test_eval;
+            if(test_eval < eval_value) 
+            {
+              #pragma omp critical
+              {
+                if(test_eval < eval_value) //redo the test in a critical region!
+                {
+                  best_transform = packaide::Transform(point, i * 360/rotations);
+                  best_point = point;
+                  best_i = i;
+                  eval_value = test_eval;
+                }
+              }
             }
           }
           polygon_placed = true;
