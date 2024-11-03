@@ -8,7 +8,7 @@ import svgelements
 from xml.dom import minidom
 
 from PackaideBindings import Point, Polygon, PolygonWithHoles, Sheet, State, Placement
-from PackaideBindings import pack_decreasing, sheet_add_holes
+from PackaideBindings import pack_decreasing, sheet_add_holes_with_holes
 
 # We want to preserve presentation and identification (e.g., id, name, class) attributes
 # when flattening the SVG elements and writing them into the output, so that the packed
@@ -252,8 +252,7 @@ def pack(sheet_svgs, shapes, offset = 1, tolerance = 1, partial_solution = False
     sheet = Sheet()
     _, holes = extract_polygons(svg_string, tolerance, offset)
     sheet.height, sheet.width = get_sheet_dimensions(svg_string)
-    holes = [hole.boundary for hole in holes]
-    sheet_add_holes(sheet, holes, state)
+    sheet_add_holes_with_holes(sheet, holes, state)
     sheets.append(sheet)
 
   # Run the packing algorithm

@@ -69,13 +69,27 @@ packaide::PolygonWithHoles boost_polygon_with_holes_convert(const Polygon_with_h
 // ------------------------------------------------------
 //                    Helper functions
 
-// Given a sheet object and a list of polyons, add those 
+// Given a sheet object and a list of polygons, add those 
 // polygons as holes to the sheet
 void sheet_add_holes_bind(packaide::Sheet& sheet, boost::python::list polygons, packaide::State& state){
   std::vector<Polygon_with_holes_2> pgons;
   for(boost::python::ssize_t i=0; i<boost::python::len(polygons); i++){
-    auto hole = Polygon_with_holes_2(packaide_polygon_convert(boost::python::extract<packaide::Polygon>(polygons[i])));
+    auto python_polygon = boost::python::extract<packaide::Polygon>(polygons[i]);
+    auto packaide_polygon = packaide_polygon_convert(python_polygon);
+    auto hole = Polygon_with_holes_2(packaide_polygon);
     pgons.push_back(hole);
+  }
+  sheet.holes = pgons;
+}
+
+// Given a sheet object and a list of polygons with holes, add those 
+// polygons as holes to the sheet
+void sheet_add_holes_with_holes_bind(packaide::Sheet& sheet, boost::python::list polygons_with_holes, packaide::State& state){
+  std::vector<Polygon_with_holes_2> pgons;
+  for(boost::python::ssize_t i=0; i<boost::python::len(polygons_with_holes); i++){
+    auto python_polygon = boost::python::extract<packaide::PolygonWithHoles>(polygons_with_holes[i]);
+    auto packaide_polygon = packaide_polygon_with_holes_convert(python_polygon);
+    pgons.push_back(packaide_polygon);
   }
   sheet.holes = pgons;
 }
@@ -172,5 +186,6 @@ BOOST_PYTHON_MODULE(PackaideBindings) {
   class_<packaide::State>("State", init<>());
 
   def("sheet_add_holes", sheet_add_holes_bind);
+  def("sheet_add_holes_with_holes", sheet_add_holes_with_holes_bind);
   def("pack_decreasing", pack_decreasing_bind);
 }
