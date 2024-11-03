@@ -110,6 +110,19 @@ The `pack` function takes, at minimum, a list of sheets represented as SVG docum
 * **persist**: If True, some information from the computation will be cached and used to speed up future runs that contain some of the same shapes. This will use increasing amounts of memory. To control persistence more tightly and limit memory consumption, a `State` object can be passed to the additional `custom_state` parameter, such that a computation given a particular state will reuse information from previous computations that used that same state.
 
 
+### Parallelization
+
+When using a high number of rotations, parallelization can help you reduce packing time. This library supports multithreading through OpenMP. 
+
+To enable parallel execution, choose the desired number of threads to use by setting the `OMP_NUM_THREADS` environment variable before running your program.
+
+Example: using 16 threads in Linux
+
+```bash
+export OMP_NUM_THREADS=16
+python example.py
+```
+
 ## Benchmarks
 
 To benchmark the library's performance after building it, you can write
