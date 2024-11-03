@@ -10,6 +10,7 @@
 find_package(Python3 REQUIRED)
 find_package(PythonLibs REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system python)
+find_package(OpenMP REQUIRED)
 
 # Use correct extension on Apple
 if(APPLE)
@@ -19,8 +20,8 @@ endif(APPLE)
 # Configure the target for the bindings library
 add_library(PackaideBindings SHARED bindings.cpp)
 target_include_directories(PackaideBindings PRIVATE ${PROJECT_SOURCE_DIR}/include ${PYTHON_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
-target_link_libraries(PackaideBindings ${PYTHON_LIBRARIES} ${Boost_LIBRARIES} PackaideLib)
-target_compile_options(PackaideBindings PRIVATE -Wfatal-errors)
+target_link_libraries(PackaideBindings ${PYTHON_LIBRARIES} ${Boost_LIBRARIES} ${OpenMP_CXX_FLAGS} PackaideLib)
+target_compile_options(PackaideBindings PRIVATE -Wfatal-errors ${OpenMP_CXX_FLAGS})
 
 # Configure installation. We opt to install into the Python packages
 # directory rather than the system library directory, for consistency
